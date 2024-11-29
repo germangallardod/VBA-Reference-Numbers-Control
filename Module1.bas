@@ -2,6 +2,8 @@ Attribute VB_Name = "Module1"
 'variables globales
 Dim globalBooleanRequestDateDifferentThanToday As Boolean
 Dim globalStringDateDifferentThanToday As String
+Dim globalBooleana1UpdateLastRequestDateAssignedRowAndColumn As Boolean
+Dim globalRowAssignedToBeUsedInA1Procedure, globalColAssignedToBeUsedInA1Procedure As Integer
 
 Sub ToExecuteWhenRequestDateNotToday()
 
@@ -24,7 +26,7 @@ Sub ToExecuteWhenRequestDateNotToday()
     
 End Sub
 
-Sub z1_updateSeveralLastRequestDatesSeguiditasUnaTrasOtra()
+Private Sub z1_updateSeveralLastRequestDatesSeguiditasUnaTrasOtra()
 
     Dim inputStr As String
     Dim inputInteger As Integer
@@ -39,14 +41,16 @@ Sub z1_updateSeveralLastRequestDatesSeguiditasUnaTrasOtra()
     Next i1
 
 End Sub
-Sub a1_updateLastRequestDate()
+Private Sub a1_updateLastRequestDate()
 
     Dim currRow, currCol, resultRow, resultCol  As Integer
     Dim colLastRequestDate, colWORefNumber, colTriggerDate As Integer
     Dim WOToSearch As String
-    Dim questionAnswer As Integer
+    Dim questionAnswer As Integer ' THIS IS ACTUALLY THE TYPE OF REQUEST URGENT(RED)6 NORMAL (BLACK)7 OTHER (BROWN)46
     Dim colorIndexOfCurrSearch As Integer
-  
+    Dim lastStatusDate, lastStatusText, locationAging, typeOfRecords, facilityUSState As Variant
+    Dim colLastStatusDate, colLastStatusText, colLocationAging, colTypeOfRecords, colFacilityUSState As Integer
+      
      ' MsgBox globalBooleanRequestDateDifferentThanToday
 
     CLEARFILTERS
@@ -54,19 +58,34 @@ Sub a1_updateLastRequestDate()
     colLastRequestDate = 1
     colWORefNumber = 8
     colTriggerDate = 2
+    colLocationAging = 15
+    colLastStatusText = 14
+    colLastStatusDate = 13
+    colTypeOfRecords = 16
+    colFacilityUSState = 11
     
     
     'GET CURRENT VALUE TO SEARCH
-    currRow = ActiveCell.Row
-    currCol = ActiveCell.Column
-    WOToSearch = Cells(currRow, currCol).Value
+    If globalBooleana1UpdateLastRequestDateAssignedRowAndColumn Then
+        currRow = globalRowAssignedToBeUsedInA1Procedure
+        currCol = globalColAssignedToBeUsedInA1Procedure
+    Else
+        currRow = ActiveCell.Row
+        currCol = ActiveCell.Column
+    End If
+    WOToSearch = Cells(currRow, colWORefNumber).Value
+    lastStatusDate = Cells(currRow, colLastStatusDate).Value
+    lastStatusText = Cells(currRow, colLastStatusText).Value
+    locationAging = Cells(currRow, colLocationAging).Value
+    typeOfRecords = Cells(currRow, colTypeOfRecords).Value
+    facilityUSState = Cells(currRow, colFacilityUSState).Value
     'questionAnswer = MsgBox("urgente?", vbDefaultButton2 + vbYesNo + vbQuestion, "rojo?")
     colorIndexOfCurrSearch = GetABIReferenceColorIndex(currRow, currCol)
-    If colorIndexOfCurrSearch = 3 Then
+    If colorIndexOfCurrSearch = 3 Or colorIndexOfCurrSearch = 9 Then  ' rojo
         questionAnswer = 6
-    ElseIf colorIndexOfCurrSearch = 46 Then
+    ElseIf colorIndexOfCurrSearch = 46 Then ' cafe
         questionAnswer = 46
-    ElseIf colorIndexOfCurrSearch = 1 Or colorIndexOfCurrSearch = -4105 Then
+    ElseIf colorIndexOfCurrSearch = 1 Or colorIndexOfCurrSearch = -4105 Then ' black
         questionAnswer = 7
     Else
         Stop
@@ -74,9 +93,9 @@ Sub a1_updateLastRequestDate()
     End If
     
     'GET CURRENT RESULT
-    Columns(colWORefNumber).Select
+    'Columns(colWORefNumber).Select
     Cells(1, colWORefNumber).Activate
-    Selection.Find(What:=WOToSearch, After:=ActiveCell, LookIn:=xlFormulas2 _
+    Columns(colWORefNumber).Find(What:=WOToSearch, After:=ActiveCell, LookIn:=xlFormulas2 _
         , LookAt:=xlPart, SearchOrder:=xlByRows, SearchDirection:=xlNext, _
         MatchCase:=False, SearchFormat:=False).Activate
     resultRow = ActiveCell.Row
@@ -87,20 +106,20 @@ Sub a1_updateLastRequestDate()
     End If
     '6 si ----  7 no
     If questionAnswer = 6 Then
-        Rows(resultRow).Select
-        With Selection.Font
+        'Rows(resultRow).Select
+        With Rows(resultRow).Font
             .Color = -16776961
             .TintAndShade = 0
         End With
     ElseIf questionAnswer = 7 Then
-        Rows(resultRow).Select
-        With Selection.Font
+        'Rows(resultRow).Select
+        With Rows(resultRow).Font
             .ColorIndex = xlAutomatic
             .TintAndShade = 0
         End With
     ElseIf questionAnswer = 46 Then
-        Rows(resultRow).Select
-        With Selection.Font
+        'Rows(resultRow).Select
+        With Rows(resultRow).Font
             .ThemeColor = xlThemeColorAccent2
             .TintAndShade = 0
         End With
@@ -108,29 +127,37 @@ Sub a1_updateLastRequestDate()
         Stop
         'option not considered
     End If
-    Cells(resultRow, resultCol).Select
+    'Cells(resultRow, resultCol).Select
     
     
     If resultCol = colWORefNumber And resultRow <> currRow Then
                 
                 
-                
-                If globalBooleanRequestDateDifferentThanToday = False Then
-                    Cells(resultRow, colLastRequestDate).FormulaR1C1 = CStr(Date)
-                ElseIf globalBooleanRequestDateDifferentThanToday = True Then
-                    Cells(resultRow, colLastRequestDate).FormulaR1C1 = globalStringDateDifferentThanToday
-                Else
-                    MsgBox "SYSTEM ERROR"
-                    Stop
-                End If
-                
-                
-    
-        Rows(currRow).Select
-        Selection.Delete Shift:=xlUp
+        'CHANGE REQUEST DATE
+        If globalBooleanRequestDateDifferentThanToday = False Then
+            Cells(resultRow, colLastRequestDate).FormulaR1C1 = CStr(Date)
+        ElseIf globalBooleanRequestDateDifferentThanToday = True Then
+            Cells(resultRow, colLastRequestDate).FormulaR1C1 = globalStringDateDifferentThanToday
+        Else
+            MsgBox "SYSTEM ERROR"
+            Stop
+        End If
+        
+        'CHANGE STATUS DATE, TEXT AND LOCATION AGING
+        Cells(resultRow, colLastStatusDate).Value = lastStatusDate
+        Cells(resultRow, colLastStatusText).Value = lastStatusText
+        Cells(resultRow, colLocationAging).Value = locationAging
+        Cells(resultRow, colLocationAging).Value = locationAging
+        Cells(resultRow, colTypeOfRecords).Value = typeOfRecords
+        Cells(resultRow, colFacilityUSState).Value = facilityUSState
+        
+        'DELETE ROW OF NEW CALL REQUEST (DUPLICATE)
+'        Rows(currRow).Select
+'        Cells(currRow + 2, 1).Select
+        Rows(currRow).Delete Shift:=xlUp
         currRow = currRow
         Call FormatConditionalFormatingDuplicateAndTodayTrigger(colWORefNumber, colTriggerDate)
-        Cells(currRow, currCol).Select
+        'Cells(currRow, currCol).Select
     Else
         MsgBox "ERROR"
         Stop
@@ -144,12 +171,6 @@ Sub a1_updateLastRequestDate()
     
 End Sub
 
-'Sub TESTERÑASDLKJÑASDF()
-'    'NEW AMARILLO  = 53
-'    'NEW ROJO = 9
-'        colorIndexNum = GetABIReferenceColorIndex(1341, 8)
-'        Stop
-'End Sub
 
 Sub markTodayWorks()
     
@@ -161,24 +182,35 @@ Sub markTodayWorks()
     Dim colorIndexNum, colIDInternal As Integer
     Dim inputSelectionBox2 As String
     Dim additionalDaysToMark As Integer
+    Dim colLocationAging, colLastStatusText, colLastStatusDate As Integer
+    Dim colCalculatedDaysFromLastStatus As Integer
+    Dim daysFromLastVisibleStatusVBA As Integer
     
    '     MsgBox globalBooleanRequestDateDifferentThanToday
-
-    
-    'prep worksheet
-    CLEARFILTERS
-    quitarMarkToday
     
     'initializers
     colLastRequestDate = 1
     colLastTrigger = 2
     startRow = 2
     flgAdditionalPrevDays = False
-    colMarked = 16
+    colMarked = 18
     cntResaltadas = 0
     colABIReferenceNumber = 8
     colIDInternal = 7
     additionalDaysToMark = 0
+    colLocationAging = 15
+    colLastStatusText = 14
+    colLastStatusDate = 13
+    colCalculatedDaysFromLastStatus = 17
+    
+    'prep worksheet
+    CLEARFILTERS
+    ChangeToRedUrgents (colABIReferenceNumber)
+    CLEARFILTERS
+    quitarMarkToday 'quitar rellenos de las celdas
+    
+    'stop automatic formula calculation
+    Application.Calculation = xlManual
     
     'days to actually go back and rellenar as pending
     daysToResaltarFromThePast = 1
@@ -201,15 +233,86 @@ ReDoResaltarDeFilas:
         End If
         'due today
         If Cells(i1, colLastRequestDate) = Date Then
-            Rows(i1).Select
-            With Selection.Interior
+'            Rows(i1).Select
+'            With Selection.Interior
+'                .Pattern = xlSolid
+'                .PatternColorIndex = xlAutomatic
+'                .ThemeColor = xlThemeColorAccent2
+'                .TintAndShade = 0.599993896298105
+'                .PatternTintAndShade = 0
+'            End With
+'            With Selection.Font
+'                .Name = "Calibri"
+'                .Strikethrough = False
+'                .Superscript = False
+'                .Subscript = False
+'                .OutlineFont = False
+'                .Shadow = False
+'                .Underline = xlUnderlineStyleNone
+'                .TintAndShade = 0
+'                .ThemeFont = xlThemeFontMinor
+'            End With
+'            With Selection.Font
+'                .Name = "Calibri"
+'                .Size = 11
+'                .Strikethrough = False
+'                .Superscript = False
+'                .Subscript = False
+'                .OutlineFont = False
+'                .Shadow = False
+'                .Underline = xlUnderlineStyleNone
+'                .TintAndShade = 0
+'                .ThemeFont = xlThemeFontMinor
+'            End With
+            With Rows(i1).Interior
                 .Pattern = xlSolid
                 .PatternColorIndex = xlAutomatic
                 .ThemeColor = xlThemeColorAccent2
                 .TintAndShade = 0.599993896298105
                 .PatternTintAndShade = 0
             End With
+            With Rows(i1).Font
+                .Name = "Calibri"
+                .Size = 11
+                .Strikethrough = False
+                .Superscript = False
+                .Subscript = False
+                .OutlineFont = False
+                .Shadow = False
+                .Underline = xlUnderlineStyleNone
+                .TintAndShade = 0
+                .ThemeFont = xlThemeFontMinor
+            End With
             Cells(i1, colMarked) = True
+            
+            'MARK A LITTLE DARKER IF BLACK 'and' DAYS TO OVERDUE IS CLOSE TO TOMORROW (WORKDAY)
+            'ONLY FOR TASKS ASSIGNED FOR TODAY
+            'IF NEEDED FOR PREV TO WORK DAYS, GO TO NEXT ELSE IF AND ADD THIS LINES TOO (ADAPTED)
+            'Stop
+                If GetABIReferenceColorIndex(i1, colABIReferenceNumber) = 1 Or GetABIReferenceColorIndex(i1, colABIReferenceNumber) = -4105 Then
+                    
+                    daysFromLastVisibleStatusVBA = Fix(Date - Cells(i1, colLastStatusDate).Value)
+                    'MsgBox daysFromLastVisibleStatusVBA
+                    
+                    'Stop
+                    'Calculate
+                    '* reembplazar esta variable contra la revision manual de la celda para evitar calcular manualmente toda la hoja
+                    
+                    
+                    If daysFromLastVisibleStatusVBA >= 20 Then
+                        'Stop
+                        'Rows(i1).Select
+                        With Rows(i1).Interior
+                            .Pattern = xlSolid
+                            .PatternColorIndex = xlAutomatic
+                            .ThemeColor = xlThemeColorAccent2
+                            .TintAndShade = 0.399975585192419
+                            .PatternTintAndShade = 0
+                        End With
+                    End If
+                End If
+            'Stop
+                
             'MARK CAFES SIEMPRE TRUE HASTA REALIZADOS (PUESTOS EN NEGRO O ROJO)
             colorIndexNum = GetABIReferenceColorIndex(i1, colABIReferenceNumber)
             If colorIndexNum = 53 Then
@@ -251,7 +354,7 @@ JustSkipFormatingForPrevDays:
             '    '22 = NEGRO (AUTOMATIC)         -4105  ' this is default black
             '    '36 = NEGRO                       1    ' this is the black we want on all
             '    '37 = ROJO                        3
-            '    '340 = CAFÉ                       53
+            '    '340 = CAF?                       53
         'Format Row Text Color
         colorIndexNum = GetABIReferenceColorIndex(i1, colABIReferenceNumber)
         If colorIndexNum = -4105 Then
@@ -304,10 +407,14 @@ JustSkipFormatingForPrevDays:
     Selection.RowHeight = 15
     'filter only marked as highlighted
     Range("A1").Select
-    ActiveSheet.ListObjects("Table1").Range.AutoFilter Field:=16, Criteria1:= _
+    ActiveSheet.ListObjects("Table1").Range.AutoFilter Field:=colMarked, Criteria1:= _
         "<>"
     ActiveWindow.ScrollRow = 2
     MsgBox "se muestran los resaltados (filtro)"
+    
+    'REACTIVA CALCULOS AUTOMATICOS
+    Calculate
+    Application.Calculation = xlAutomatic
     
     
 End Sub
@@ -323,33 +430,40 @@ Private Sub quitarMarkToday()
 
 End Sub
 
-Private Sub CLEARFILTERS()
+Public Sub CLEARFILTERS()
     On Error Resume Next
+    
+    Dim selectedRow, selectedCol As Integer
+    
+    selectedRow = Selection.Row
+    selectedCol = Selection.Column
+    Range("h1").Select
     ActiveSheet.ShowAllData
+    Cells(selectedRow, selectedCol).Select
 End Sub
 
 Sub FormatConditionalFormatingDuplicateAndTodayTrigger(ByVal colWOnumber As Integer, ByVal colTriggerDate As Integer)
 
     Application.CutCopyMode = False
     Cells.FormatConditions.Delete
-    Columns(colWOnumber).Select
-    Cells(2, colWOnumber).Activate
-    Selection.FormatConditions.AddUniqueValues
-    Selection.FormatConditions(Selection.FormatConditions.Count).SetFirstPriority
-    Selection.FormatConditions(1).DupeUnique = xlDuplicate
-    With Selection.FormatConditions(1).Interior
+    'Columns(colWOnumber).Select
+    'Cells(2, colWOnumber).Activate
+    Columns(colWOnumber).FormatConditions.AddUniqueValues
+    Columns(colWOnumber).FormatConditions(Selection.FormatConditions.Count).SetFirstPriority
+    Columns(colWOnumber).FormatConditions(1).DupeUnique = xlDuplicate
+    With Columns(colWOnumber).FormatConditions(1).Interior
         .PatternColorIndex = xlAutomatic
         .Color = 10498160
         .TintAndShade = 0
     End With
     Selection.FormatConditions(1).StopIfTrue = False
     
-    Columns(colTriggerDate).Select
-    Cells(2, colTriggerDate).Activate
-    Selection.FormatConditions.Add Type:=xlCellValue, Operator:=xlEqual, _
+'    Columns(colTriggerDate).Select
+'    Cells(2, colTriggerDate).Activate
+    Columns(colTriggerDate).FormatConditions.Add Type:=xlCellValue, Operator:=xlEqual, _
         Formula1:="=TODAY()"
-    Selection.FormatConditions(Selection.FormatConditions.Count).SetFirstPriority
-    With Selection.FormatConditions(1).Interior
+    Columns(colTriggerDate).FormatConditions(Selection.FormatConditions.Count).SetFirstPriority
+    With Columns(colTriggerDate).FormatConditions(1).Interior
         .PatternColorIndex = xlAutomatic
         .ThemeColor = xlThemeColorAccent6
         .TintAndShade = 0
@@ -363,7 +477,7 @@ End Sub
             '    '22 = NEGRO (AUTOMATIC)         -4105  ' this is default black
             '    '36 = NEGRO                       1    ' this is the black we want on all
             '    '37 = ROJO                        3
-            '    '340 = CAFÉ                       53
+            '    '340 = CAF?                       53
             '   NEW AMARILLO  = 53
             '   NEW ROJO = 9
             
@@ -445,7 +559,7 @@ Function NumeroALetra(ByVal numero As Integer) As String
     Case 26
     NumeroALetra = "Z"
     Case Else
-    NumeroALetra = "Error" ' Valor de error para números no válidos
+    NumeroALetra = "Error" ' Valor de error para n?meros no v?lidos
     End Select
 End Function
 
@@ -472,18 +586,35 @@ Sub addTheMissingIDsForTheNewReferencesReceived(ByVal colIDInternal As Integer, 
         .SortMethod = xlPinYin
         .Apply
     End With
-    Range("G2").Select
-    Selection.End(xlDown).Select
-    lastIDUsed = Selection.Value
-    currRow = Selection.Row
+'    Range("G2").Select
+'    Selection.End(xlDown).Select
+'    lastIDUsed = Selection.Value
+    With Range("G2").End(xlDown)
+        lastIDUsed = .Value
+        currRow = .Row
+    End With
     currCol = colIDInternal
     Do While Cells(currRow + 1, colABIRefNumber) <> ""
         lastIDUsed = lastIDUsed + 1
         currRow = currRow + 1
-        Cells(currRow, colIDInternal).Select
-        Selection.Value = lastIDUsed
-        If Cells(currRow, colLastRequestDate).Value = "" Then
+'        Cells(currRow, colIDInternal).Select
+'        Selection.Value = lastIDUsed
+        Cells(currRow, colIDInternal).Value = lastIDUsed
         
+        
+'        tempvalwo = Cells(currRow, colABIRefNumber).Value
+'        MsgBox tempvalwo
+'        temprowmatchresult = Application.WorksheetFunction.Match(Cells(currRow, colABIRefNumber).Value, Range(NumeroALetra(colABIRefNumber) & CStr(1) & ":" & NumeroALetra(colABIRefNumber) & CStr(currRow)), 0)
+'        MsgBox temprowmatchresult
+        
+        
+        
+        
+        'Stop
+        
+        If (Application.WorksheetFunction.Match(Cells(currRow, colABIRefNumber).Value, Range(NumeroALetra(colABIRefNumber) & CStr(1) & ":" & NumeroALetra(colABIRefNumber) & CStr(currRow)), 0)) = currRow Then
+            'IF THE ORDER IS A NEW ORDER
+            If Cells(currRow, colLastRequestDate).Value = "" Then
                 If globalBooleanRequestDateDifferentThanToday = False Then
                     Cells(currRow, colLastRequestDate).Value = CStr(Date)
                 ElseIf globalBooleanRequestDateDifferentThanToday = True Then
@@ -492,7 +623,17 @@ Sub addTheMissingIDsForTheNewReferencesReceived(ByVal colIDInternal As Integer, 
                     MsgBox "SYSTEM ERROR"
                     Stop
                 End If
-           
+            End If
+        Else
+            'IF THE ORDER IS A DUPLICATE ORDER
+            'Cells(currRow, colABIRefNumber).Select
+            globalBooleana1UpdateLastRequestDateAssignedRowAndColumn = True
+            globalRowAssignedToBeUsedInA1Procedure = currRow
+            globalColAssignedToBeUsedInA1Procedure = colABIRefNumber
+            Call a1_updateLastRequestDate
+            globalBooleana1UpdateLastRequestDateAssignedRowAndColumn = False
+            lastIDUsed = lastIDUsed - 1
+            currRow = currRow - 1
         End If
     Loop
     'ASCENDING FACILITY NAME COLUMN
@@ -512,5 +653,76 @@ Sub addTheMissingIDsForTheNewReferencesReceived(ByVal colIDInternal As Integer, 
     'END WITH FIRST ROW SELECT
     Range("A2").Select
     ActiveWindow.ScrollRow = 2
+End Sub
+
+'
+'Private Function esOrdenDuplicada(ByVal currRow As Integer, ByVal colWOlocation As String) As Boolean
+'
+'    'if((
+'        MATCH(N44,$C$7:$C$847,0)+XXXXXXXX
+'        =ROW(N44),1,0)
+'
+'End Function
+
+
+Sub ChangeToRedUrgents(ByVal colABIReference As Integer)
+'
+' Macro1 Macro
+'
+
+'
+    Dim inputStr, rangeStr As String
+
+    'CLEAR FILTERS
+    CLEARFILTERS
+    'filter new reds to give format
+    Range("h2").Select
+    ActiveSheet.ListObjects("Table1").Range.AutoFilter Field:=9, Criteria1:=RGB _
+        (255, 199, 206), Operator:=xlFilterCellColor
+ReAskQuestion:
+    inputStr = InputBox("cual es la primer row de rojos? - elija ninguno si todos son negros", "first filtered row")
+    If inputStr = "ninguno" Then
+        Exit Sub
+    ElseIf inputStr = "" Then
+        MsgBox "numero de celda inicial de rojos no puede ser vacio"
+        GoTo ReAskQuestion
+    ElseIf Not IsNumeric(inputStr) Then
+        MsgBox "numero de fila requiere ser numerico"
+        GoTo ReAskQuestion
+        If InStr(inputStr, ".") > 0 Then
+            MsgBox "numero de fila no puede tener decimales"
+            GoTo ReAskQuestion
+            ' Check if the numeric value is an integer
+            If CLng(inputStr) <> Val(inputStr) Then
+                MsgBox "this is not a valid value"
+                GoTo ReAskQuestion
+            End If
+        End If
+'    Else
+'        MsgBox "this is not a valid value"
+'        GoTo ReAskQuestion
+    End If
+    rangeStr = NumeroALetra(colABIReference) & inputStr
+    
+    
+    Range(rangeStr).Select
+    i1 = MsgBox("celda seleccionada es la correcta?", vbQuestion + vbYesNo + vbDefaultButton1, "celda seleccionada correcta?")
+    If i1 = 6 Then 'yes
+        ' do nothing
+    ElseIf i1 = 7 Then 'no
+        'ask question again
+        GoTo ReAskQuestion
+    Else
+        'error
+        Stop
+    End If
+    
+    Range(Selection, Selection.End(xlDown)).Select
+    With Selection.Font
+        .Color = -16776961
+        .TintAndShade = 0
+    End With
+    Range(rangeStr).Select
+    
 End Sub
 
